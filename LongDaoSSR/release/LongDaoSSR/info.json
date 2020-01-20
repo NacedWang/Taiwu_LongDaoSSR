@@ -1,0 +1,8 @@
+{
+  "Id": "LongDaoSSR",
+  "DisplayName": "龙岛忠仆SSR",
+  "Author": "xiaoye1024 | 小枫泡泡 | NacedWang",
+  "Version": "1.2.1",
+  "AssemblyName": "LongDaoSSR.dll",
+  "EntryMethod": "LongDaoSSR.Main.Load"
+}
