@@ -26,7 +26,7 @@ namespace LongDaoSSR
          *  招募忠仆时候进行培训的银钱
          **/
         public static int practiceMoney = 0;
-        public static string logPath; //调试输出路径
+
 
         static bool Load(UnityModManager.ModEntry modEntry)
         {
@@ -36,7 +36,7 @@ namespace LongDaoSSR
             logger = modEntry.Logger;
             modEntry.OnToggle = OnToggle;
             modEntry.OnGUI = OnGUI;
-            logPath = System.IO.Path.Combine(modEntry.Path, "log/debuglog.txt");
+
 
             return true;
         }
@@ -166,7 +166,7 @@ namespace LongDaoSSR
                 if (!oneFlag)
                 {
                     // AddAllFeature();
-                    debugLogIntIntString(DateFile.instance.actorFeaturesDate,true);//显示全部特性
+                    // debugLogIntIntString(DateFile.instance.actorFeaturesDate, true);//显示全部特性
                 }
                 return;
             }
@@ -209,7 +209,17 @@ namespace LongDaoSSR
                     //logger.Log("特性:" + DateFile.instance.actorsDate[lastNPCid][101]);
                     if (IsLongDaoZhongPu(lastNPCid))
                     {
-                        NpcChange(lastNPCid);
+                        try
+                        {
+                            NpcChange(lastNPCid);
+                        }
+                        catch (Exception e)
+                        {
+                            logger.Error("龙岛忠仆Mod变更NPC属性失败!");
+                            logger.Error(e.StackTrace);
+                            DateFile.instance.ActorFeaturesCacheReset(lastNPCid);
+                        }
+
                     }
                     lastNPCid = -1;
                 }
@@ -224,10 +234,6 @@ namespace LongDaoSSR
         public static bool IsLongDaoZhongPu(int id)
         {
             List<int> npcFeature = DateFile.instance.GetActorFeature(lastNPCid);
-            foreach (int featureId in npcFeature)
-            {
-                logger.Log("npc has feature :"+featureId);
-            }
             return npcFeature.Contains(4005);
         }
 
@@ -237,26 +243,25 @@ namespace LongDaoSSR
         /// <param name="id">忠仆id</param>
         public static void NpcChange(int id)
         {
-       
+
             //1.【志同道合】龙岛忠仆的处世立场与玩家获得忠仆时的立场相同
             Characters.SetCharProperty(id, 16, Characters.GetCharProperty(DateFile.instance.mianActorId, 16));
             // 设置忠仆年龄为16岁
             Characters.SetCharProperty(id, 11, "16");
 
             //2.【龙神赐寿】每个龙岛忠仆都被龙神赋予更多的阳寿，终生侍奉主人
-            // 忠仆最少年龄为60岁，及最少还能苟44年
-            logger.Log("npc[11]年龄 npc[12]健康 npc[13]健康上线:"+ Characters.GetCharProperty(id, 11) + " "+ Characters.GetCharProperty(id, 12) + " " + Characters.GetCharProperty(id, 13));
-            if (Int32.Parse(Characters.GetCharProperty(id,12)) < 44)
+            // 忠仆最少年龄为60岁
+            // logger.Log("npc[11]年龄 npc[12]健康 npc[13]健康上线:" + Characters.GetCharProperty(id, 11) + " " + Characters.GetCharProperty(id, 12) + " " + Characters.GetCharProperty(id, 13));
+            if (Int32.Parse(Characters.GetCharProperty(id, 12)) < 60)
             {
-                Characters.SetCharProperty(id, 13, "44");
-                Characters.SetCharProperty(id, 12, "44");
+                Characters.SetCharProperty(id, 13, "60");
+                Characters.SetCharProperty(id, 12, "60");
             }
 
             // 修改特性，移除不良特性
             logger.Log("npc 特性 :" + Characters.GetCharProperty(id, 101));
             List<int> npcFeature = DateFile.instance.GetActorFeature(id);
             npcFeature.Sort();
-            logger.Log("npc 特性 :" + Characters.GetCharProperty(id, 101));
             String featureResult = "";
             // 是否有抓周特性
             Boolean hasZhuaZhouFeature = false;
@@ -268,12 +273,11 @@ namespace LongDaoSSR
             {
                 int featureItem = featureId;
                 // 移除异常生育特质
-                if (featureItem >= 1001 && featureItem <=1003)
+                if (featureItem >= 1001 && featureItem <= 1003)
                 {
                     continue;
                 }
                 // 是否有抓周、时节、特殊特性 ，没有的话遍历结束后自动加上
-                logger.Log("npc has feature :" + featureId);
                 if (featureItem >= 3001 && featureItem <= 3024)
                 {
                     hasTimeFeature = true;
@@ -297,7 +301,7 @@ namespace LongDaoSSR
                 }
                 if (featureItem % 6 == 4)
                 {
-                    featureItem -= 1;
+                    featureItem -= 3;
                 }
                 if (featureResult == "")
                 {
@@ -311,23 +315,23 @@ namespace LongDaoSSR
             System.Random random = new System.Random();
             if (!hasTimeFeature)
             {
-                featureResult = featureResult + "|" + Int32.Parse( (random.Next(1,24) + 3000).ToString());
+                featureResult = featureResult + "|" + Int32.Parse((random.Next(1, 24) + 3000).ToString());
             }
             if (!hasZhuaZhouFeature)
             {
-                featureResult = featureResult + "|" + Int32.Parse( (random.Next(1,12) +2000).ToString());
+                featureResult = featureResult + "|" + Int32.Parse((random.Next(1, 12) + 2000).ToString());
             }
             if (!hasSpecialFeature)
             {
-                featureResult = featureResult + "|" + Int32.Parse( (random.Next(1,3) + 5000).ToString());
+                featureResult = featureResult + "|" + Int32.Parse((random.Next(1, 3) + 5000).ToString());
             }
             logger.Log("featureResult :" + featureResult);
             // 添加特性
             Characters.SetCharProperty(id, 101, featureResult);
 
             //资质均衡
-            Characters.SetCharProperty(id, 551, Characters.GetCharProperty(DateFile.instance.mianActorId, 551));
-            Characters.SetCharProperty(id, 651, Characters.GetCharProperty(DateFile.instance.mianActorId, 651));
+            Characters.SetCharProperty(id, 551, "2");
+            Characters.SetCharProperty(id, 651, "2");
 
             //资质加强
 
@@ -335,52 +339,66 @@ namespace LongDaoSSR
             int practiceIntelligence = 0;
             // 获取太吾身上的余额
             int balance = Int32.Parse(Characters.GetCharProperty(DateFile.instance.mianActorId, 406));
-            logger.Log("balance :" + balance);
+            logger.Log("太吾银钱 :" + balance);
             int cost = 0;
-            if (balance < Main.practiceMoney * 10000 )
+            if (balance < Main.practiceMoney * 10000)
             {
                 practiceIntelligence = (int)(balance / 10000);
-            } else
+            }
+            else
             {
                 practiceIntelligence = Main.practiceMoney;
             }
             cost = practiceIntelligence * 10000;
             logger.Log("培训班费用" + cost);
+            logger.Log("培训班技能增强" + practiceIntelligence);
             //增强内功身法绝技
-            int neiGongIntelligence = 80 + practiceIntelligence + (int)( Int32.Parse( Characters.GetCharProperty(DateFile.instance.mianActorId,601)) * 0.2 );
-            int shenFaIntelligence = 80 + practiceIntelligence + (int)( Int32.Parse( Characters.GetCharProperty(DateFile.instance.mianActorId,602)) * 0.2 );
-            int jueJiIntelligence = 80 + practiceIntelligence + (int)( Int32.Parse( Characters.GetCharProperty(DateFile.instance.mianActorId,603)) * 0.2 );
-            logger.Log("601原始资质" + Characters.GetCharProperty(DateFile.instance.mianActorId, 601));
-            logger.Log("602原始资质" + Characters.GetCharProperty(DateFile.instance.mianActorId, 602));
-            logger.Log("603原始资质" + Characters.GetCharProperty(DateFile.instance.mianActorId, 603));
+            int neiGongIntelligence = 80 + practiceIntelligence + (int)(Int32.Parse(Characters.GetCharProperty(DateFile.instance.mianActorId, 601)) * 0.2);
+            int shenFaIntelligence = 80 + practiceIntelligence + (int)(Int32.Parse(Characters.GetCharProperty(DateFile.instance.mianActorId, 602)) * 0.2);
+            int jueJiIntelligence = 80 + practiceIntelligence + (int)(Int32.Parse(Characters.GetCharProperty(DateFile.instance.mianActorId, 603)) * 0.2);
             Characters.SetCharProperty(id, 601, neiGongIntelligence.ToString());
             Characters.SetCharProperty(id, 602, shenFaIntelligence.ToString());
             Characters.SetCharProperty(id, 603, jueJiIntelligence.ToString());
-            
-            // 增强技艺
-            for (int i = 501;i<=516;i++)
+
+            // 增强基础属性
+            for (int i = 61; i <= 66; i++)
             {
                 int baseIntelligence = Int32.Parse(Characters.GetCharProperty(id, i));
-                logger.Log(i + "原始资质" + baseIntelligence);
                 if (baseIntelligence < 60)
                 {
                     baseIntelligence = 60;
                 }
-                baseIntelligence = baseIntelligence + practiceIntelligence + (int)(Int32.Parse(Characters.GetCharProperty(DateFile.instance.mianActorId, 601)) * 0.1);
-                logger.Log(i + "加成资质" + baseIntelligence);
+                baseIntelligence = baseIntelligence + practiceIntelligence + (int)(Int32.Parse(Characters.GetCharProperty(DateFile.instance.mianActorId, i)) * 0.1);
+                Characters.SetCharProperty(id, i, baseIntelligence.ToString());
+            }
+            // 增强技艺
+            for (int i = 501; i <= 516; i++)
+            {
+                int baseIntelligence = Int32.Parse(Characters.GetCharProperty(id, i));
+                if (baseIntelligence < 60)
+                {
+                    baseIntelligence = 60;
+                }
+                // 厨艺锻造不能差
+                if (i == 515 || i == 507)
+                {
+                    if (baseIntelligence < 90)
+                    {
+                        baseIntelligence = 90;
+                    }
+                }
+                baseIntelligence = baseIntelligence + practiceIntelligence + (int)(Int32.Parse(Characters.GetCharProperty(DateFile.instance.mianActorId, i)) * 0.1);
                 Characters.SetCharProperty(id, i, baseIntelligence.ToString());
             }
             // 增强武学
             for (int i = 604; i <= 614; i++)
             {
                 int baseIntelligence = Int32.Parse(Characters.GetCharProperty(id, i));
-                logger.Log(i + "原始资质" + baseIntelligence);
                 if (baseIntelligence < 60)
                 {
                     baseIntelligence = 60;
                 }
-                baseIntelligence = baseIntelligence + practiceIntelligence + (int)(Int32.Parse(Characters.GetCharProperty(DateFile.instance.mianActorId, 601)) * 0.1);
-                logger.Log(i + "加成资质" + baseIntelligence);
+                baseIntelligence = baseIntelligence + practiceIntelligence + (int)(Int32.Parse(Characters.GetCharProperty(DateFile.instance.mianActorId, i)) * 0.1);
                 Characters.SetCharProperty(id, i, baseIntelligence.ToString());
             }
 
@@ -391,14 +409,14 @@ namespace LongDaoSSR
                 logger.Log("交完学费所剩银钱:" + Characters.GetCharProperty(DateFile.instance.mianActorId, 406));
             }
             //刷新特性
-            DateFile.instance.ActorFeaturesCacheReset(); 
+            DateFile.instance.ActorFeaturesCacheReset();
 
             //工作服 73703 劲衣 工作车 83503 下泽车
             DateFile.instance.SetActorEquip(id, 305, DateFile.instance.MakeNewItem(73703));
             DateFile.instance.SetActorEquip(id, 311, DateFile.instance.MakeNewItem(83503));
         }
 
-        
+
         //debug遍历输出Dictionary<int, Dictionary<int, string>>
         public static void debugLogIntIntString(Dictionary<int, Dictionary<int, string>> dic, bool savelog)
         {
@@ -417,8 +435,7 @@ namespace LongDaoSSR
                     break;
                 }
             }
-            if (savelog) saveLog(logText);
-            else logger.Log(logText);
+            logger.Log(logText);
         }
         //debug遍历输出List<int>
         public static void debugLogListInt(List<int> list)
@@ -430,15 +447,6 @@ namespace LongDaoSSR
             }
             logger.Log(logText);
         }
-        //保存日志到log目录
-        public static void saveLog(string logtext)
-        {
-            FileStream fs = new FileStream(logPath, FileMode.Create);
-            byte[] logdata = System.Text.Encoding.Default.GetBytes(logtext);
-            fs.Write(logdata, 0, logdata.Length);
-            fs.Flush();
-            fs.Close();
-        }
-        
+
     }
 }
