@@ -301,11 +301,11 @@ namespace LongDaoSSR
                 }
                 if (featureResult == "")
                 {
-                    featureResult += featureId;
+                    featureResult += featureItem;
                 }
                 else
                 {
-                    featureResult = featureResult + "|" + featureId;
+                    featureResult = featureResult + "|" + featureItem;
                 }
             }
             System.Random random = new System.Random();
@@ -322,7 +322,7 @@ namespace LongDaoSSR
                 featureResult = featureResult + "|" + Int32.Parse( (random.Next(1,3) + 5000).ToString());
             }
             logger.Log("featureResult :" + featureResult);
-            // 添加梦境中人
+            // 添加特性
             Characters.SetCharProperty(id, 101, featureResult);
 
             //资质均衡
@@ -374,6 +374,10 @@ namespace LongDaoSSR
             {
                 int baseIntelligence = Int32.Parse(Characters.GetCharProperty(id, i));
                 logger.Log(i + "原始资质" + baseIntelligence);
+                if (baseIntelligence < 60)
+                {
+                    baseIntelligence = 60;
+                }
                 baseIntelligence = baseIntelligence + practiceIntelligence + (int)(Int32.Parse(Characters.GetCharProperty(DateFile.instance.mianActorId, 601)) * 0.1);
                 logger.Log(i + "加成资质" + baseIntelligence);
                 Characters.SetCharProperty(id, i, baseIntelligence.ToString());
@@ -381,7 +385,7 @@ namespace LongDaoSSR
 
             //扣除学习班费用
             UIDate.instance.ChangeResource(DateFile.instance.mianActorId, 5, -1 * cost, true);
-
+            logger.Log("交完学费所剩银钱:" + Characters.GetCharProperty(DateFile.instance.mianActorId, 406));
             //刷新特性
             DateFile.instance.ActorFeaturesCacheReset(); 
 

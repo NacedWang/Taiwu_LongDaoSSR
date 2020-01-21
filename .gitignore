@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+/LongDaoSSR/.vs/LongDaoSSR/v16
+/LongDaoSSR/bin/Debug
+/LongDaoSSR/obj/Debug
+/LongDaoSSR/Properties
