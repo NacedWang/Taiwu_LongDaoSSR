@@ -345,6 +345,7 @@ namespace LongDaoSSR
                 practiceIntelligence = Main.practiceMoney;
             }
             cost = practiceIntelligence * 10000;
+            logger.Log("培训班费用" + cost);
             //增强内功身法绝技
             int neiGongIntelligence = 80 + practiceIntelligence + (int)( Int32.Parse( Characters.GetCharProperty(DateFile.instance.mianActorId,601)) * 0.2 );
             int shenFaIntelligence = 80 + practiceIntelligence + (int)( Int32.Parse( Characters.GetCharProperty(DateFile.instance.mianActorId,602)) * 0.2 );
@@ -384,8 +385,11 @@ namespace LongDaoSSR
             }
 
             //扣除学习班费用
-            UIDate.instance.ChangeResource(DateFile.instance.mianActorId, 5, -1 * cost, true);
-            logger.Log("交完学费所剩银钱:" + Characters.GetCharProperty(DateFile.instance.mianActorId, 406));
+            if (cost >= 10000)
+            {
+                UIDate.instance.ChangeResource(DateFile.instance.mianActorId, 5, -1 * cost, true);
+                logger.Log("交完学费所剩银钱:" + Characters.GetCharProperty(DateFile.instance.mianActorId, 406));
+            }
             //刷新特性
             DateFile.instance.ActorFeaturesCacheReset(); 
 
