@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
@@ -21,7 +22,11 @@ namespace LongDaoSSR
         public static int lastNPCid = -1; //最后生成且还未判断的NPC的id，-1表示无
         public static bool oneFlag = false;
         public static bool isInGame = false;
-        //public static string logPath; //调试输出路径
+        /**
+         *  招募忠仆时候进行培训的银钱
+         **/
+        public static int practiceMoney = 0;
+        public static string logPath; //调试输出路径
 
         static bool Load(UnityModManager.ModEntry modEntry)
         {
@@ -31,7 +36,7 @@ namespace LongDaoSSR
             logger = modEntry.Logger;
             modEntry.OnToggle = OnToggle;
             modEntry.OnGUI = OnGUI;
-            //logPath = System.IO.Path.Combine(modEntry.Path, "log/debuglog.txt");
+            logPath = System.IO.Path.Combine(modEntry.Path, "log/debuglog.txt");
 
             return true;
         }
@@ -47,16 +52,23 @@ namespace LongDaoSSR
         static void OnGUI(UnityModManager.ModEntry modEntry)
         {
             GUILayout.Label("  修改了一些龙岛忠仆的特性，让忠仆更适合太吾村的发展!");
-            GUILayout.Label("<color=#8FBAE7FF>【志同道合】</color> 龙岛忠仆的处世立场与玩家获得忠仆时的立场相同.");
-            GUILayout.Label("<color=#F28234FF>【龙神赐寿】</color> 每个龙岛忠仆都被龙神赋予更长的阳寿，终生侍奉主人.");
-            GUILayout.Label("<color=#E4504DFF>【天资·艺】</color> 化全身资质于一道，大幅增强一项技艺的资质.");
-            GUILayout.Label("<color=#E4504DFF>【天资·武】</color> 化全身资质于一道，大幅增强一项进攻武学的资质，中幅增强内功身法绝技的资质.");
-            GUILayout.Label("  注: 天资特性只会是人物原本资质最好的一项");
-            GUILayout.Label("  <color=#FF0000FF>如果要删除本MOD，请在对应存档内按下清除新特性的按钮并存档，避免坏档，清除新特性只影响显示效果，忠仆不会消失</color>");
+            GUILayout.Label("  获取忠仆可以获取太吾各项属性的10%的资质!内功身法绝技为20%");
+            GUILayout.Label("  忠仆默认与太吾处事立场相同!");
+            GUILayout.Label("  忠仆默认16岁，寿命至少为60岁!");
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("  太吾教育中心：招募忠仆时花费银钱进行专业培训：");
+            var guiPracticeMoney = GUILayout.TextField(Main.practiceMoney.ToString(), 3, GUILayout.Width(85));
+            if (GUI.changed && !int.TryParse(guiPracticeMoney, out Main.practiceMoney))
+            {
+                Main.practiceMoney = 0;
+            }
+            GUILayout.Label("万；每1万银钱可额外提升忠仆各项资质1点");
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+            GUILayout.Label("  <color=#FF0000FF>如果要删除原【龙岛忠仆】本MOD，请在对应存档内按下清除新特性的按钮并存档，避免坏档，清除新特性只影响显示效果，忠仆不会消失</color>");
 
             //检测存档
             DateFile tbl = DateFile.instance;
-            //if (tbl == null || tbl.actorsDate == null || !tbl.actorsDate.ContainsKey(tbl.mianActorId))
             if (tbl == null || Game.Instance.GetCurrentGameStateName().ToString() != eGameState.InGame.ToString())
             {
                 GUILayout.Label("  存档未载入!");
@@ -80,27 +92,13 @@ namespace LongDaoSSR
             logger.Log("开始清除新特性");
             int[] allCount = Characters.GetAllCharIds();
             logger.Log("人物有" + allCount.Length + "个等待遍历");
-            /*
-            foreach (KeyValuePair<int, Dictionary<int, string>> e in DateFile.instance.actorsDate)
-            {
-                if (e.Value.ContainsKey(101))
-                {
-                    if(e.Value[101].Contains("4006"))
-                    {
-                        num++;
-                        idlist.Add(e.Key);
-                    }
-                }
-            }
-            */
             try
             {
                 foreach (int actorId in allCount)
                 {
-                    logger.Log("人物id：" + actorId);
-                    logger.Log("人物特性：" + actorId);
                     if (Characters.HasChar(actorId) && Characters.GetCharProperty(actorId, 101) != null && Characters.GetCharProperty(actorId, 101).Contains("4005"))
                     {
+                        logger.Log("忠仆人物id：" + actorId);
                         idlist.Add(actorId);
                     }
                 }
@@ -167,8 +165,8 @@ namespace LongDaoSSR
                 }
                 if (!oneFlag)
                 {
-                    AddAllFeature();
-                    //debugLogIntIntString(DateFile.instance.actorFeaturesDate);//显示全部特性
+                    // AddAllFeature();
+                    debugLogIntIntString(DateFile.instance.actorFeaturesDate,true);//显示全部特性
                 }
                 return;
             }
@@ -186,7 +184,7 @@ namespace LongDaoSSR
                 {
                     return;
                 }
-                //logger.Log("新的NPC生成了！id:" + __result);
+                logger.Log("新的NPC生成了！id:" + __result);
                 lastNPCid = __result;
                 //DateFile.instance.ActorFeaturesCacheReset(__result); //刷新特性
                 DateFile.instance.ActorFeaturesCacheReset(); //刷新特性缓存
@@ -225,192 +223,174 @@ namespace LongDaoSSR
         /// <returns></returns>
         public static bool IsLongDaoZhongPu(int id)
         {
-            //bool flag = false;
             List<int> npcFeature = DateFile.instance.GetActorFeature(lastNPCid);
-
-            return npcFeature.Contains(4005);
-            /*
-            for (int i = 0; i < npcFeature.Count; i++)
+            foreach (int featureId in npcFeature)
             {
-                if (npcFeature[i] == 4005) //4005为龙岛忠仆特性
-                {
-                    flag = true;
-                    logger.Log("检测到新加入的龙岛忠仆");
-                }
+                logger.Log("npc has feature :"+featureId);
             }
-            return flag;
-            */
+            return npcFeature.Contains(4005);
         }
 
         /// <summary>
         /// 修改指定idNPC数据
         /// </summary>
-        /// <param name="id"></param>
+        /// <param name="id">忠仆id</param>
         public static void NpcChange(int id)
         {
-            //Dictionary<int, string> npc;
-            //npc = DateFile.instance.actorsDate[id];
-            //Dictionary<int, string> player;
-            //player = DateFile.instance.actorsDate[DateFile.instance.mianActorId];
-
+       
             //1.【志同道合】龙岛忠仆的处世立场与玩家获得忠仆时的立场相同
-            //logger.Log("npc[16]:"+npc[16] + ",player[16]:"+player[16]);
-            Characters.SetCharProperty(id, 16, Characters.GetCharProperty(DateFile.instance.mianActorId, 16)); //修改立场
-            //npc[16] = player[16]; //修改立场
-            //npc[101] += "|4006"; //添加立场特性
+            Characters.SetCharProperty(id, 16, Characters.GetCharProperty(DateFile.instance.mianActorId, 16));
+            // 设置忠仆年龄为16岁
+            Characters.SetCharProperty(id, 11, "16");
 
             //2.【龙神赐寿】每个龙岛忠仆都被龙神赋予更多的阳寿，终生侍奉主人
-            //logger.Log("npc[11] npc[12] npc[13]:"+npc[11] +" "+ npc[12] + " " + npc[13]);
-            //npc[13] = "100";
-            //npc[12] = "100";
-            Characters.SetCharProperty(id, 13, "100");
-            Characters.SetCharProperty(id, 12, "100");
+            // 忠仆最少年龄为60岁，及最少还能苟44年
+            logger.Log("npc[11]年龄 npc[12]健康 npc[13]健康上线:"+ Characters.GetCharProperty(id, 11) + " "+ Characters.GetCharProperty(id, 12) + " " + Characters.GetCharProperty(id, 13));
+            if (Int32.Parse(Characters.GetCharProperty(id,12)) < 44)
+            {
+                Characters.SetCharProperty(id, 13, "44");
+                Characters.SetCharProperty(id, 12, "44");
+            }
 
-            //logger.Log("npc[11] npc[12] npc[13]:" + npc[11] + " " + npc[12] + " " + npc[13]);
-            //npc[101] += "|4007"; //添加寿命特性
-            Characters.SetCharProperty(id, 101, Characters.GetCharProperty(id, 101) + "|4006|4007"); //添加立场与寿命特性
+            // 修改特性，移除不良特性
+            logger.Log("npc 特性 :" + Characters.GetCharProperty(id, 101));
+            List<int> npcFeature = DateFile.instance.GetActorFeature(id);
+            npcFeature.Sort();
+            logger.Log("npc 特性 :" + Characters.GetCharProperty(id, 101));
+            String featureResult = "";
+            // 是否有抓周特性
+            Boolean hasZhuaZhouFeature = false;
+            // 是否有时节特性
+            Boolean hasTimeFeature = false;
+            // 是否有特殊特性
+            Boolean hasSpecialFeature = false;
+            foreach (int featureId in npcFeature)
+            {
+                int featureItem = featureId;
+                // 移除异常生育特质
+                if (featureItem >= 1001 && featureItem <=1003)
+                {
+                    continue;
+                }
+                // 是否有抓周、时节、特殊特性 ，没有的话遍历结束后自动加上
+                logger.Log("npc has feature :" + featureId);
+                if (featureItem >= 3001 && featureItem <= 3024)
+                {
+                    hasTimeFeature = true;
+                }
+                if (featureItem >= 2001 && featureItem <= 2012)
+                {
+                    hasZhuaZhouFeature = true;
+                }
+                if (featureItem >= 5001 && featureItem <= 5003)
+                {
+                    hasSpecialFeature = true;
+                }
+                //进行不良特性升级 ，-3变为+1 ；-2变为+1 ；+1变为+1
+                if (featureItem % 6 == 0)
+                {
+                    featureItem -= 5;
+                }
+                if (featureItem % 6 == 5)
+                {
+                    featureItem -= 4;
+                }
+                if (featureItem % 6 == 4)
+                {
+                    featureItem -= 1;
+                }
+                if (featureResult == "")
+                {
+                    featureResult += featureId;
+                }
+                else
+                {
+                    featureResult = featureResult + "|" + featureId;
+                }
+            }
+            System.Random random = new System.Random();
+            if (!hasTimeFeature)
+            {
+                featureResult = featureResult + "|" + Int32.Parse( (random.Next(1,24) + 3000).ToString());
+            }
+            if (!hasZhuaZhouFeature)
+            {
+                featureResult = featureResult + "|" + Int32.Parse( (random.Next(1,12) +2000).ToString());
+            }
+            if (!hasSpecialFeature)
+            {
+                featureResult = featureResult + "|" + Int32.Parse( (random.Next(1,3) + 5000).ToString());
+            }
+            logger.Log("featureResult :" + featureResult);
+            // 添加梦境中人
+            Characters.SetCharProperty(id, 101, featureResult);
 
             //资质均衡
-            //npc[551] = "2";
-            //npc[651] = "2";
             Characters.SetCharProperty(id, 551, Characters.GetCharProperty(DateFile.instance.mianActorId, 551));
             Characters.SetCharProperty(id, 651, Characters.GetCharProperty(DateFile.instance.mianActorId, 651));
 
-            //挑选最出众的资质
-            int yiID = 501;
-            for (int i = 0; i < 16; i++)
+            //资质加强
+
+            //培训班增强数
+            int practiceIntelligence = 0;
+            // 获取太吾身上的余额
+            int balance = Int32.Parse(Characters.GetCharProperty(DateFile.instance.mianActorId, 406));
+            logger.Log("balance :" + balance);
+            int cost = 0;
+            if (balance < Main.practiceMoney * 10000 )
             {
-                /*
-                if (Int32.Parse(npc[yiID]) < Int32.Parse(npc[501 + i]))
-                {
-                    yiID = 501 + i;
-                }
-                */
-                if (Int32.Parse(Characters.GetCharProperty(id, yiID)) < Int32.Parse(Characters.GetCharProperty(id, 501 + i)))
-                {
-                    yiID = 501 + i;
-                }
-            }
-            int wuID = 604;
-            for (int i = 0; i < 11; i++)
+                practiceIntelligence = (int)(balance / 10000);
+            } else
             {
-                /*
-                if (Int32.Parse(npc[wuID]) < Int32.Parse(npc[604 + i]))
-                {
-                    wuID = 604 + i;
-                }
-                */
-                if (Int32.Parse(Characters.GetCharProperty(id, wuID)) < Int32.Parse(Characters.GetCharProperty(id, 604 + i)))
-                {
-                    wuID = 604 + i;
-                }
+                practiceIntelligence = Main.practiceMoney;
             }
-
-            //3.【精于一道·艺】化全身资质于一道，大幅增强一项技艺的资质
-            //求其他技艺资质的平均值
-            int jiyiAver = 0;
-            for (int i = 0; i < 16; i++)
+            cost = practiceIntelligence * 10000;
+            //增强内功身法绝技
+            int neiGongIntelligence = 80 + practiceIntelligence + (int)( Int32.Parse( Characters.GetCharProperty(DateFile.instance.mianActorId,601)) * 0.2 );
+            int shenFaIntelligence = 80 + practiceIntelligence + (int)( Int32.Parse( Characters.GetCharProperty(DateFile.instance.mianActorId,602)) * 0.2 );
+            int jueJiIntelligence = 80 + practiceIntelligence + (int)( Int32.Parse( Characters.GetCharProperty(DateFile.instance.mianActorId,603)) * 0.2 );
+            logger.Log("601原始资质" + Characters.GetCharProperty(DateFile.instance.mianActorId, 601));
+            logger.Log("602原始资质" + Characters.GetCharProperty(DateFile.instance.mianActorId, 602));
+            logger.Log("603原始资质" + Characters.GetCharProperty(DateFile.instance.mianActorId, 603));
+            Characters.SetCharProperty(id, 601, neiGongIntelligence.ToString());
+            Characters.SetCharProperty(id, 602, shenFaIntelligence.ToString());
+            Characters.SetCharProperty(id, 603, jueJiIntelligence.ToString());
+            
+            // 增强技艺
+            for (int i = 501;i<=516;i++)
             {
-                if (yiID != 501 + i)
+                int baseIntelligence = Int32.Parse(Characters.GetCharProperty(id, i));
+                logger.Log(i + "原始资质" + baseIntelligence);
+                if (baseIntelligence < 60)
                 {
-                    //jiyiAver += Int32.Parse(npc[501 + i]);
-                    jiyiAver += Int32.Parse(Characters.GetCharProperty(id, 501 + i));
+                    baseIntelligence = 60;
                 }
+                baseIntelligence = baseIntelligence + practiceIntelligence + (int)(Int32.Parse(Characters.GetCharProperty(DateFile.instance.mianActorId, 601)) * 0.1);
+                logger.Log(i + "加成资质" + baseIntelligence);
+                Characters.SetCharProperty(id, i, baseIntelligence.ToString());
             }
-            jiyiAver /= 15;
-            //求武学资质平均值
-            int wuxueAver = 0;
-            for (int i = 0; i < 14; i++)
+            // 增强武学
+            for (int i = 604; i <= 614; i++)
             {
-                //wuxueAver += Int32.Parse(npc[601 + i]);
-                wuxueAver += Int32.Parse(Characters.GetCharProperty(id, 601 + i));
+                int baseIntelligence = Int32.Parse(Characters.GetCharProperty(id, i));
+                logger.Log(i + "原始资质" + baseIntelligence);
+                baseIntelligence = baseIntelligence + practiceIntelligence + (int)(Int32.Parse(Characters.GetCharProperty(DateFile.instance.mianActorId, 601)) * 0.1);
+                logger.Log(i + "加成资质" + baseIntelligence);
+                Characters.SetCharProperty(id, i, baseIntelligence.ToString());
             }
-            wuxueAver /= 13;
-            //增强的技艺资质 = 原技艺资质 + jiyiAver * 0.3 + wuxueAver * 0.2;
-            Characters.SetCharProperty(id, yiID, ((int)(Int32.Parse(Characters.GetCharProperty(id, yiID)) + jiyiAver * 0.4 + wuxueAver * 0.3)).ToString());
-            //npc[yiID] = ((int)(Int32.Parse(npc[yiID]) + jiyiAver * 0.4 + wuxueAver * 0.3)).ToString();
-            //npc[101] += "|" + (3507 + yiID).ToString(); //添加资质
-            Characters.SetCharProperty(id, 101, Characters.GetCharProperty(id, 101) + "|" + (3507 + yiID).ToString()); //添加资质
 
+            //扣除学习班费用
+            UIDate.instance.ChangeResource(DateFile.instance.mianActorId, 5, -1 * cost, true);
 
-            //4.【精于一道·武】化全身资质于一道，大幅增强一项进攻武学的资质，中幅增强内功身法绝技的资质
-            jiyiAver /= 15;
-            //增强的武学资质 = 原武学资质 + wuxueAver * 0.3 + jiyiAver * 0.2;
-            //npc[wuID] = ((int)(Int32.Parse(npc[wuID]) + wuxueAver * 0.4 + jiyiAver * 0.3)).ToString();
-            Characters.SetCharProperty(id, wuID, ((int)(Int32.Parse(Characters.GetCharProperty(id, wuID)) + wuxueAver * 0.4 + jiyiAver * 0.3)).ToString());
-            //npc[wuID] = ((int)(Int32.Parse(npc[wuID]) + wuxueAver * 0.4 + jiyiAver * 0.3)).ToString();
-            //中幅增强内功身法绝技
-            string shuxing = ((int)(Int32.Parse(Characters.GetCharProperty(id, 601)) + wuxueAver * 0.2 + jiyiAver * 0.2)).ToString();
-            //npc[601] = ((int)(Int32.Parse(npc[601]) + wuxueAver * 0.2 + jiyiAver * 0.2)).ToString();
-            //npc[602] = ((int)(Int32.Parse(npc[601]) + wuxueAver * 0.2 + jiyiAver * 0.2)).ToString();
-            //npc[603] = ((int)(Int32.Parse(npc[601]) + wuxueAver * 0.2 + jiyiAver * 0.2)).ToString();
-            Characters.SetCharProperty(id, 601, shuxing);
-            Characters.SetCharProperty(id, 602, shuxing);
-            Characters.SetCharProperty(id, 603, shuxing);
-            Characters.SetCharProperty(id, 101, Characters.GetCharProperty(id, 101) + "|" + (3420 + wuID).ToString()); //添加资质
-                                                                                                                       //npc[101] += "|" + (3420 + wuID).ToString(); //添加资质
-
-
-            //DateFile.instance.ActorFeaturesCacheReset(id); //刷新特性
-            DateFile.instance.ActorFeaturesCacheReset(); //刷新特性
+            //刷新特性
+            DateFile.instance.ActorFeaturesCacheReset(); 
 
             //工作服 73703 劲衣 工作车 83503 下泽车
             DateFile.instance.SetActorEquip(id, 305, DateFile.instance.MakeNewItem(73703));
-            DateFile.instance.SetActorEquip(id, 305, DateFile.instance.MakeNewItem(83503));
-            //npc[305] = DateFile.instance.MakeNewItem(73703).ToString();
-            //npc[311] = DateFile.instance.MakeNewItem(83503).ToString();
+            DateFile.instance.SetActorEquip(id, 311, DateFile.instance.MakeNewItem(83503));
         }
 
-        /// <summary>
-        /// 注入新特性，占用特性表4006-4034
-        /// </summary>
-        public static void AddAllFeature()
-        {
-            //志同道合
-            AddNewFeature(4006, "<color=#8FBAE7FF>志同道合</color>", "<color=#EFE38EFF>因与太吾传人立场一致，愿意成为太吾的家仆</color>", "0", "1", "1|1", "4006");
-            //龙神赐寿
-            AddNewFeature(4007, "<color=#F28234FF>龙神赐寿</color>", "<color=#EFE38EFF>每个龙岛忠仆都被龙神赋予更长的阳寿，终生侍奉主人</color>", "0", "3|3|3", "0", "4007");
-            //精于一道·艺
-            String[] yiWrod = new string[] { "音律", "弈棋", "诗书", "绘画", "术数", "品鉴", "锻造", "制木", "医术", "毒术", "织锦", "巧匠", "道法", "佛学", "厨艺", "杂学" };
-            for (int i = 4008; i < 4024; i++)
-            {
-                AddNewFeature(i, "<color=#E4504DFF>天资·" + yiWrod[i - 4008] + "</color>", "<color=#EFE38EFF>天生对</color><color=#E4504DFF>" + yiWrod[i - 4008] + "</color><color=#EFE38EFF>拥有异样的体悟，决定精于此道</color>", "0", "0", "1|1|1", "4008");
-            }
-
-            //精于一道·武
-            String[] wuWrod = new string[] { "拳掌", "指法", "腿法", "暗器", "剑法", "刀法", "长兵", "奇门", "软兵", "御射", "乐器" };
-            for (int i = 4024; i < 4035; i++)
-            {
-                AddNewFeature(i, "<color=#E4504DFF>天资·" + wuWrod[i - 4024] + "</color>", "<color=#EFE38EFF>天生对</color><color=#E4504DFF>" + wuWrod[i - 4024] + "</color><color=#EFE38EFF>拥有异样的体悟，决定精于此道</color>", "1|1|1", "0", "0", "4008");
-            }
-        }
-
-        /// <summary>
-        /// 向特性表中添加特性
-        /// </summary>
-        /// <param name="featureID">特性id</param>
-        /// <param name="featureName">特性名称</param>
-        /// <param name="featureDisc">特性描述</param>
-        /// <param name="zhanDou">战斗点</param>
-        /// <param name="fangYu">防御点</param>
-        /// <param name="jiLue">机略点</param>
-        /// <param name="zu">所属组</param>
-        public static void AddNewFeature(int featureID, string featureName, string featureDisc, string zhanDou, string fangYu, string jiLue, string zu)
-        {
-            DateFile.instance.actorFeaturesDate[featureID] = new Dictionary<int, string>();
-            foreach (KeyValuePair<int, string> kv in DateFile.instance.actorFeaturesDate[0])
-            {
-                DateFile.instance.actorFeaturesDate[featureID][kv.Key] = kv.Value;
-            }
-            DateFile.instance.actorFeaturesDate[featureID][0] = featureName;
-            DateFile.instance.actorFeaturesDate[featureID][99] = featureDisc;
-            DateFile.instance.actorFeaturesDate[featureID][1] = zhanDou;
-            DateFile.instance.actorFeaturesDate[featureID][2] = fangYu;
-            DateFile.instance.actorFeaturesDate[featureID][3] = jiLue;
-            DateFile.instance.actorFeaturesDate[featureID][5] = zu;
-        }
-
-        /*
+        
         //debug遍历输出Dictionary<int, Dictionary<int, string>>
         public static void debugLogIntIntString(Dictionary<int, Dictionary<int, string>> dic, bool savelog)
         {
@@ -451,6 +431,6 @@ namespace LongDaoSSR
             fs.Flush();
             fs.Close();
         }
-        */
+        
     }
 }
