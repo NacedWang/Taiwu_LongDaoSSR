@@ -54,6 +54,7 @@ namespace LongDaoSSR
             GUILayout.Label("  修改了一些龙岛忠仆的特性，让忠仆更适合太吾村的发展!");
             GUILayout.Label("  获取忠仆可以获取太吾各项属性的10%的资质!内功身法绝技为20%");
             GUILayout.Label("  忠仆默认与太吾处事立场相同!");
+            GUILayout.Label("  忠仆会获得抓周特性和随机一个特殊特性!特殊特性为【梦境中人】【神锋敛彩】【璞玉韬光】");
             GUILayout.Label("  忠仆默认16岁，寿命至少为60岁!");
             GUILayout.BeginHorizontal();
             GUILayout.Label("  太吾教育中心：招募忠仆时花费银钱进行专业培训：");
@@ -261,8 +262,7 @@ namespace LongDaoSSR
             // 修改特性，移除不良特性
             logger.Log("npc 特性 :" + Characters.GetCharProperty(id, 101));
             List<int> npcFeature = DateFile.instance.GetActorFeature(id);
-            npcFeature.Sort();
-            String featureResult = "";
+            
             // 是否有抓周特性
             Boolean hasZhuaZhouFeature = false;
             // 是否有时节特性
@@ -293,41 +293,39 @@ namespace LongDaoSSR
                 //进行不良特性升级 ，-3变为+1 ；-2变为+1 ；+1变为+1
                 if (featureItem % 6 == 0)
                 {
-                    featureItem -= 5;
+                    Characters.RemoveCharProperty(id, featureItem);
+                    Characters.SetCharProperty(id, 101, Characters.GetCharProperty(id, 101) + "|" + (featureItem-5));
+                    continue;
                 }
                 if (featureItem % 6 == 5)
                 {
-                    featureItem -= 4;
+                    Characters.RemoveCharProperty(id, featureItem);
+                    Characters.SetCharProperty(id, 101, Characters.GetCharProperty(id, 101) + "|" + (featureItem - 4));
+                    continue;
                 }
                 if (featureItem % 6 == 4)
                 {
-                    featureItem -= 3;
+                    Characters.RemoveCharProperty(id, featureItem);
+                    Characters.SetCharProperty(id, 101, Characters.GetCharProperty(id, 101) + "|" + (featureItem - 3));
+                    continue;
                 }
-                if (featureResult == "")
-                {
-                    featureResult += featureItem;
-                }
-                else
-                {
-                    featureResult = featureResult + "|" + featureItem;
-                }
+                
             }
             System.Random random = new System.Random();
             if (!hasTimeFeature)
             {
-                featureResult = featureResult + "|" + Int32.Parse((random.Next(1, 24) + 3000).ToString());
+                Characters.SetCharProperty(id, 101, Characters.GetCharProperty(id, 101) + "|" + Int32.Parse((random.Next(1, 24) + 3000).ToString()));
             }
             if (!hasZhuaZhouFeature)
             {
-                featureResult = featureResult + "|" + Int32.Parse((random.Next(1, 12) + 2000).ToString());
+                Characters.SetCharProperty(id, 101, Characters.GetCharProperty(id, 101) + "|" + Int32.Parse((random.Next(1, 12) + 2000).ToString()));
             }
             if (!hasSpecialFeature)
             {
-                featureResult = featureResult + "|" + Int32.Parse((random.Next(1, 3) + 5000).ToString());
+                Characters.SetCharProperty(id, 101, Characters.GetCharProperty(id, 101) + "|" + Int32.Parse((random.Next(1, 3) + 5000).ToString()));
             }
-            logger.Log("featureResult :" + featureResult);
-            // 添加特性
-            Characters.SetCharProperty(id, 101, featureResult);
+            // 最终特性
+            logger.Log("featureResult :" + Characters.GetCharProperty(id,101));
 
             //资质均衡
             Characters.SetCharProperty(id, 551, "2");
@@ -382,9 +380,9 @@ namespace LongDaoSSR
                 // 厨艺锻造不能差
                 if (i == 515 || i == 507)
                 {
-                    if (baseIntelligence < 90)
+                    if (baseIntelligence < 80)
                     {
-                        baseIntelligence = 90;
+                        baseIntelligence = 80;
                     }
                 }
                 baseIntelligence = baseIntelligence + practiceIntelligence + (int)(Int32.Parse(Characters.GetCharProperty(DateFile.instance.mianActorId, i)) * 0.1);

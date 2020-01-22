@@ -14,7 +14,6 @@
 # Compiled Dynamic libraries
 *.so
 *.dylib
-*.dll
 
 # Fortran module files
 *.mod
@@ -33,4 +32,3 @@
 /LongDaoSSR/.vs/LongDaoSSR/v16
 /LongDaoSSR/bin/Debug
 /LongDaoSSR/obj/Debug
-/LongDaoSSR/Properties
