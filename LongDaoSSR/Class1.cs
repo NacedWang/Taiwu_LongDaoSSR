@@ -261,27 +261,21 @@ namespace LongDaoSSR
 
             // 修改特性，移除不良特性
             logger.Log("npc 特性 :" + Characters.GetCharProperty(id, 101));
-            List<int> npcFeature = DateFile.instance.GetActorFeature(id);
+            String[] npcFeature = Characters.GetCharProperty(id, 101).Split('|');
             
             // 是否有抓周特性
             Boolean hasZhuaZhouFeature = false;
-            // 是否有时节特性
-            Boolean hasTimeFeature = false;
             // 是否有特殊特性
             Boolean hasSpecialFeature = false;
-            foreach (int featureId in npcFeature)
+            foreach (String featureId in npcFeature)
             {
-                int featureItem = featureId;
+                int featureItem =  Int32.Parse(featureId);
                 // 移除异常生育特质
                 if (featureItem >= 1001 && featureItem <= 1003)
                 {
                     continue;
                 }
-                // 是否有抓周、时节、特殊特性 ，没有的话遍历结束后自动加上
-                if (featureItem >= 3001 && featureItem <= 3024)
-                {
-                    hasTimeFeature = true;
-                }
+                // 是否有抓周、特殊特性 ，没有的话遍历结束后自动加上
                 if (featureItem >= 2001 && featureItem <= 2012)
                 {
                     hasZhuaZhouFeature = true;
@@ -291,31 +285,27 @@ namespace LongDaoSSR
                     hasSpecialFeature = true;
                 }
                 //进行不良特性升级 ，-3变为+1 ；-2变为+1 ；+1变为+1
-                if (featureItem % 6 == 0)
+                if (featureItem % 6 == 0 && featureItem < 500)
                 {
-                    Characters.RemoveCharProperty(id, featureItem);
-                    Characters.SetCharProperty(id, 101, Characters.GetCharProperty(id, 101) + "|" + (featureItem-5));
+                    logger.Log("0cacheResetFeatureResult replace :" + Characters.GetCharProperty(id, 101).Replace(featureItem.ToString(), (featureItem-5).ToString()));
+                    Characters.SetCharProperty(id, 101, Characters.GetCharProperty(id, 101).Replace(featureItem.ToString(), (featureItem-5).ToString()));
                     continue;
                 }
-                if (featureItem % 6 == 5)
+                if (featureItem % 6 == 5 && featureItem < 500)
                 {
-                    Characters.RemoveCharProperty(id, featureItem);
-                    Characters.SetCharProperty(id, 101, Characters.GetCharProperty(id, 101) + "|" + (featureItem - 4));
+                    logger.Log("0cacheResetFeatureResult replace :" + Characters.GetCharProperty(id, 101).Replace(featureItem.ToString(), (featureItem-4).ToString()));
+                    Characters.SetCharProperty(id, 101, Characters.GetCharProperty(id, 101).Replace(featureItem.ToString(), (featureItem-4).ToString()));
                     continue;
                 }
-                if (featureItem % 6 == 4)
+                if (featureItem % 6 == 4 && featureItem < 500)
                 {
-                    Characters.RemoveCharProperty(id, featureItem);
-                    Characters.SetCharProperty(id, 101, Characters.GetCharProperty(id, 101) + "|" + (featureItem - 3));
+                    logger.Log("0cacheResetFeatureResult replace :" + Characters.GetCharProperty(id, 101).Replace(featureItem.ToString(), (featureItem-3).ToString()));
+                    Characters.SetCharProperty(id, 101, Characters.GetCharProperty(id, 101).Replace(featureItem.ToString(), (featureItem-3).ToString()));
                     continue;
                 }
                 
             }
             System.Random random = new System.Random();
-            if (!hasTimeFeature)
-            {
-                Characters.SetCharProperty(id, 101, Characters.GetCharProperty(id, 101) + "|" + Int32.Parse((random.Next(1, 24) + 3000).ToString()));
-            }
             if (!hasZhuaZhouFeature)
             {
                 Characters.SetCharProperty(id, 101, Characters.GetCharProperty(id, 101) + "|" + Int32.Parse((random.Next(1, 12) + 2000).ToString()));
@@ -408,7 +398,7 @@ namespace LongDaoSSR
             }
             //刷新特性
             DateFile.instance.ActorFeaturesCacheReset();
-
+            logger.Log("npc change finished");
             //工作服 73703 劲衣 工作车 83503 下泽车
             DateFile.instance.SetActorEquip(id, 305, DateFile.instance.MakeNewItem(73703));
             DateFile.instance.SetActorEquip(id, 311, DateFile.instance.MakeNewItem(83503));
