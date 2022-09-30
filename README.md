@@ -1,3 +1,13 @@
+
+#  已无效，请使用正式版MOD
+
+正式版链接 https://github.com/NacedWang/Taiwu_LongDaoSSR_new
+
+[点击前往](https://github.com/NacedWang/Taiwu_LongDaoSSR_new)
+
+2022-09-30
+
+
 # Taiwu_LongDaoSSR
 自用版龙岛忠仆
 
